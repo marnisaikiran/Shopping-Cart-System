@@ -1,0 +1,66 @@
+// Cart.java
+@Entity
+@Table(name = "carts")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Cart {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @OneToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+    
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CartItem> items = new ArrayList<>();
+    
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+    
+    // Calculate total amount
+    public BigDecimal getTotalAmount() {
+        return items.stream()
+                .map(CartItem::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    // Get total items count
+    public Integer getTotalItems() {
+        return items.stream()
+                .mapToInt(CartItem::getQuantity)
+                .sum();
+    }
+}
+
+// CartItem.java
+@Entity
+@Table(name = "cart_items")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CartItem {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne
+    @JoinColumn(name = "cart_id")
+    private Cart cart;
+    
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private Product product;
+    
+    @Column(nullable = false)
+    private Integer quantity;
+    
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal unitPrice;
+    
+    // Calculate total price for this item
+    public BigDecimal getTotalPrice() {
+        return unitPrice.multiply(new BigDecimal(quantity));
+    }
+}
